@@ -156,7 +156,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.go('/profile'),
         ),
         actions: [
           TextButton(
@@ -564,10 +564,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 
                 TextFormField(
                   controller: _githubController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'GitHub URL',
                     hintText: 'https://github.com/username',
-                    prefixIcon: FaIcon(FontAwesomeIcons.github),
+                    prefixIcon: Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      child: FaIcon(
+                        FontAwesomeIcons.github,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                 ),
                 
@@ -575,10 +585,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 
                 TextFormField(
                   controller: _linkedinController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'LinkedIn URL',
                     hintText: 'https://linkedin.com/in/username',
-                    prefixIcon: FaIcon(FontAwesomeIcons.linkedin),
+                    prefixIcon: Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      child: FaIcon(
+                        FontAwesomeIcons.linkedin,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                 ),
                 
@@ -637,7 +657,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop();
+        context.go('/profile');
       }
     }
   }

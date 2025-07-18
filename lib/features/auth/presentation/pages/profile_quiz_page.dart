@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/file_upload_service.dart';
 import '../../../../shared/models/user_profile.dart';
 
 class ProfileQuizPage extends StatefulWidget {
@@ -137,35 +138,47 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Progress indicator
-              LinearProgressIndicator(
-                value: (_currentStep + 1) / 8,
-                backgroundColor: Colors.white,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.primary,
-                ),
-              ),
+              // Progress indicator with circles and lines
+              _buildProgressIndicator(),
               
               const SizedBox(height: 8),
               
               Text(
-                'Step ${_currentStep + 1} of 8',
+                'Step ${_currentStep + 1} of 9',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               
-              // Quiz content
+              // Quiz content with smooth transitions
               Expanded(
                 child: Form(
                   key: _formKey,
-                  child: _buildCurrentStep(),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(
+                            begin: 0.98,
+                            end: 1.0,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _buildCurrentStep(),
+                  ),
                 ),
               ),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               
               // Navigation buttons
               Row(
@@ -196,23 +209,50 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return _buildBasicInfoStep();
+        return SingleChildScrollView(
+          key: const ValueKey(0),
+          child: _buildBasicInfoStep(),
+        );
       case 1:
-        return _buildProfilePictureStep();
+        return SingleChildScrollView(
+          key: const ValueKey(1),
+          child: _buildProfilePictureStep(),
+        );
       case 2:
-        return _buildEducationStep();
+        return SingleChildScrollView(
+          key: const ValueKey(2),
+          child: _buildEducationStep(),
+        );
       case 3:
-        return _buildExperienceStep();
+        return SingleChildScrollView(
+          key: const ValueKey(3),
+          child: _buildExperienceStep(),
+        );
       case 4:
-        return _buildLocationStep();
+        return SingleChildScrollView(
+          key: const ValueKey(4),
+          child: _buildLocationStep(),
+        );
       case 5:
-        return _buildSalaryStep();
+        return SingleChildScrollView(
+          key: const ValueKey(5),
+          child: _buildSalaryStep(),
+        );
       case 6:
-        return _buildSkillsStep();
+        return SingleChildScrollView(
+          key: const ValueKey(6),
+          child: _buildSkillsStep(),
+        );
       case 7:
-        return _buildFinalStep();
+        return SingleChildScrollView(
+          key: const ValueKey(7),
+          child: _buildFinalStep(),
+        );
       case 8:
-        return _buildDocumentsStep();
+        return SingleChildScrollView(
+          key: const ValueKey(8),
+          child: _buildDocumentsStep(),
+        );
       default:
         return const SizedBox();
     }
@@ -407,17 +447,34 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
               const SizedBox(height: 24),
               
               ElevatedButton.icon(
-                onPressed: () {
-                  // Simulate profile picture upload
-                  setState(() {
-                    _profilePictureUrl = 'profile_picture_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Profile picture uploaded successfully!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                onPressed: () async {
+                  try {
+                    final fileUploadService = FileUploadService();
+                    final filePath = await fileUploadService.uploadImage(
+                      type: FileUploadType.profilePicture,
+                    );
+                    
+                    if (filePath != null) {
+                      setState(() {
+                        _profilePictureUrl = filePath;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Profile picture uploaded successfully!'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error uploading profile picture: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.upload),
                 label: Text(_profilePictureUrl != null ? 'Photo Uploaded' : 'Upload Photo'),
@@ -615,56 +672,56 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
         ),
         const SizedBox(height: 32),
         
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _skills.length,
-            itemBuilder: (context, index) {
-              final skill = _skills[index];
-              final isSelected = _selectedSkills.contains(skill);
-              
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedSkills.remove(skill);
-                    } else {
-                      _selectedSkills.add(skill);
-                    }
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _skills.length,
+          itemBuilder: (context, index) {
+            final skill = _skills[index];
+            final isSelected = _selectedSkills.contains(skill);
+            
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedSkills.remove(skill);
+                  } else {
+                    _selectedSkills.add(skill);
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
                     color: isSelected 
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outline,
-                    ),
+                        : Theme.of(context).colorScheme.outline,
                   ),
-                  child: Center(
-                    child: Text(
-                      skill,
-                      style: TextStyle(
-                        color: isSelected 
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.onSurface,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                ),
+                child: Center(
+                  child: Text(
+                    skill,
+                    style: TextStyle(
+                      color: isSelected 
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -697,56 +754,56 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
         ),
         const SizedBox(height: 16),
         
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _industries.length,
-            itemBuilder: (context, index) {
-              final industry = _industries[index];
-              final isSelected = _selectedIndustries.contains(industry);
-              
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedIndustries.remove(industry);
-                    } else {
-                      _selectedIndustries.add(industry);
-                    }
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _industries.length,
+          itemBuilder: (context, index) {
+            final industry = _industries[index];
+            final isSelected = _selectedIndustries.contains(industry);
+            
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedIndustries.remove(industry);
+                  } else {
+                    _selectedIndustries.add(industry);
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
                     color: isSelected 
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outline,
-                    ),
+                        : Theme.of(context).colorScheme.outline,
                   ),
-                  child: Center(
-                    child: Text(
-                      industry,
-                      style: TextStyle(
-                        color: isSelected 
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.onSurface,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                ),
+                child: Center(
+                  child: Text(
+                    industry,
+                    style: TextStyle(
+                      color: isSelected 
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
         
         const SizedBox(height: 24),
@@ -847,17 +904,34 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  // Simulate resume upload
-                  setState(() {
-                    _resumeUrl = 'resume_${DateTime.now().millisecondsSinceEpoch}.pdf';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Resume uploaded successfully!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                onPressed: () async {
+                  try {
+                    final fileUploadService = FileUploadService();
+                    final filePath = await fileUploadService.uploadPDF(
+                      type: FileUploadType.resume,
+                    );
+                    
+                    if (filePath != null) {
+                      setState(() {
+                        _resumeUrl = filePath;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Resume uploaded successfully!'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error uploading resume: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.upload),
                 label: Text(_resumeUrl != null ? 'Resume Uploaded' : 'Upload Resume'),
@@ -923,17 +997,34 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  // Simulate cover letter upload
-                  setState(() {
-                    _coverLetterUrl = 'cover_letter_${DateTime.now().millisecondsSinceEpoch}.pdf';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cover letter uploaded successfully!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                onPressed: () async {
+                  try {
+                    final fileUploadService = FileUploadService();
+                    final filePath = await fileUploadService.uploadPDF(
+                      type: FileUploadType.coverLetter,
+                    );
+                    
+                    if (filePath != null) {
+                      setState(() {
+                        _coverLetterUrl = filePath;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Cover letter uploaded successfully!'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error uploading cover letter: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.upload),
                 label: Text(_coverLetterUrl != null ? 'Cover Letter Uploaded' : 'Upload Cover Letter'),
@@ -942,6 +1033,75 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    const totalSteps = 9;
+
+    return Row(
+      children: List.generate(totalSteps, (index) {
+        final isCompleted = index < _currentStep;
+        final isCurrent = index == _currentStep;
+        final isLast = index == totalSteps - 1;
+
+        return Expanded(
+          child: Row(
+            children: [
+              // Circle with consistent size
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCompleted || isCurrent
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                  border: isCompleted || isCurrent
+                      ? null
+                      : Border.all(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                ),
+                child: Center(
+                  child: isCompleted
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
+                        )
+                      : Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: isCurrent
+                                ? Colors.white
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                ),
+              ),
+              
+              // Connecting line with uniform spacing
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: index < _currentStep
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -1062,7 +1222,7 @@ class _ProfileQuizPageState extends State<ProfileQuizPage> {
       await authService.updateProfile(updatedProfile);
       
       if (mounted) {
-        context.go('/discover');
+        context.go('/quiz-welcome');
       }
     }
   }

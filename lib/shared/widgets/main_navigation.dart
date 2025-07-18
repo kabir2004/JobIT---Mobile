@@ -16,6 +16,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> with TickerProviderStateMixin {
   int _currentIndex = 0;
+  int _previousIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -51,6 +52,11 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+    
+    // Set initial index based on current route
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateCurrentIndex();
+    });
   }
 
   @override
@@ -59,9 +65,21 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
     super.dispose();
   }
 
+  void _updateCurrentIndex() {
+    final currentRoute = GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+    final newIndex = _navigationItems.indexWhere((item) => item.route == currentRoute);
+    if (newIndex != -1 && newIndex != _currentIndex) {
+      setState(() {
+        _previousIndex = _currentIndex;
+        _currentIndex = newIndex;
+      });
+    }
+  }
+
   void _onTabTapped(int index) {
     if (_currentIndex != index) {
       setState(() {
+        _previousIndex = _currentIndex;
         _currentIndex = index;
       });
       
@@ -83,13 +101,13 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
         transitionBuilder: (Widget child, Animation<double> animation) {
           return FadeTransition(
             opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.1, 0),
-                end: Offset.zero,
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.98,
+                end: 1.0,
               ).animate(CurvedAnimation(
                 parent: animation,
-                curve: Curves.easeInOutCubic,
+                curve: Curves.easeOutCubic,
               )),
               child: child,
             ),

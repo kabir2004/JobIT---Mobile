@@ -243,12 +243,8 @@ class _SignInModalState extends State<SignInModal> {
       
       if (success && mounted) {
         Navigator.of(context).pop();
-        // Navigate to main app or profile quiz based on profile completion
-        if (authService.currentUser?.isProfileComplete == true) {
-          context.go('/discover');
-        } else {
-          context.go('/profile-quiz');
-        }
+        // For sign-in, always go to discover page (assumes user already has profile)
+        context.go('/discover');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

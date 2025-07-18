@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'dart:io';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/file_upload_service.dart';
 import '../../../../shared/models/user_profile.dart';
 import 'profile_edit_page.dart';
 
@@ -17,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
   bool _showProfileCompletionBanner = true;
+  final FileUploadService _fileUploadService = FileUploadService();
 
   @override
   void initState() {
@@ -49,6 +53,37 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     super.dispose();
   }
 
+  Future<void> _updateProfilePicture() async {
+    try {
+      final result = await _fileUploadService.pickAndUploadFile(
+        FileUploadType.profilePicture,
+        context,
+      );
+      
+      if (result != null && mounted) {
+        // Update the user profile with the new picture URL
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final currentUser = authService.currentUser;
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(
+            profilePictureUrl: result,
+          );
+          authService.updateProfile(updatedUser);
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildHeader() {
     return Row(
       children: [
@@ -74,11 +109,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileEditPage(),
-                  ),
-                );
+                context.go('/profile-edit');
               },
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -131,14 +162,19 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                                 child: child,
                               );
                             },
-                            child: Icon(
-                              themeProvider.isDarkMode 
-                                  ? Icons.dark_mode 
-                                  : Icons.light_mode,
-                              key: ValueKey(themeProvider.isDarkMode),
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            child: themeProvider.isDarkMode
+                                ? FaIcon(
+                                    FontAwesomeIcons.moon,
+                                    key: ValueKey(themeProvider.isDarkMode),
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  )
+                                : Icon(
+                                    Icons.light_mode,
+                                    key: ValueKey(themeProvider.isDarkMode),
+                                    size: 20,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
                           ),
                         ),
                       ),
@@ -223,36 +259,49 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           Row(
             children: [
               // Profile Picture
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: user.profilePictureUrl != null
-                    ? ClipOval(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
+              GestureDetector(
+                onTap: _updateProfilePicture,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: user.profilePictureUrl != null
+                      ? ClipOval(
+                          child: Image.file(
+                            File(user.profilePictureUrl!),
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                              );
+                            },
                           ),
-                          child: Center(
-                            child: Text(
-                              'Photo',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
-                      )
-                    : Icon(
-                        Icons.person,
-                        size: 32,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -283,14 +332,18 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           // Location and Experience
           Row(
             children: [
-              _buildInfoItem(
-                icon: Icons.location_on,
-                text: location,
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.location_on,
+                  text: location,
+                ),
               ),
-              const SizedBox(width: 24),
-              _buildInfoItem(
-                icon: Icons.work,
-                text: experience,
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.work,
+                  text: experience,
+                ),
               ),
             ],
           ),
@@ -300,14 +353,18 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           // Education
           Row(
             children: [
-              _buildInfoItem(
-                icon: Icons.school,
-                text: school,
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.school,
+                  text: school,
+                ),
               ),
-              const SizedBox(width: 24),
-              _buildInfoItem(
-                icon: Icons.book,
-                text: major,
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.book,
+                  text: major,
+                ),
               ),
             ],
           ),
@@ -354,10 +411,13 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         ),
         const SizedBox(width: 8),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -377,12 +437,15 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         ),
         const SizedBox(width: 8),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: isPlaceholder 
-                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: isPlaceholder 
+                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

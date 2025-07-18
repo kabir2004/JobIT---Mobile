@@ -14,8 +14,13 @@ class ApplicationTrackerModal extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
       child: Container(
-        margin: const EdgeInsets.all(24),
+        width: double.maxFinite,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        margin: const EdgeInsets.all(8),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -43,9 +48,12 @@ class ApplicationTrackerModal extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               FaIcon(
                                 FontAwesomeIcons.building,
@@ -53,23 +61,25 @@ class ApplicationTrackerModal extends StatelessWidget {
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                application.company,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                              Flexible(
+                                child: Text(
+                                  application.company,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(width: 12),
                           Text(
                             '•',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                             ),
                           ),
-                          const SizedBox(width: 12),
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               FaIcon(
                                 FontAwesomeIcons.locationDot,
@@ -77,10 +87,13 @@ class ApplicationTrackerModal extends StatelessWidget {
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                application.location,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                              Flexible(
+                                child: Text(
+                                  application.location,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -120,8 +133,12 @@ class ApplicationTrackerModal extends StatelessWidget {
             
             const SizedBox(height: 20),
             
-            // Timeline
-            _buildTimeline(context),
+            // Timeline with proper scrolling
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildTimeline(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -174,99 +191,119 @@ class ApplicationTrackerModal extends StatelessWidget {
       ),
     ];
 
-    return Column(
-      children: stages.asMap().entries.map((entry) {
-        final index = entry.key;
-        final stage = entry.value;
-        final isLast = index == stages.length - 1;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: stages.asMap().entries.map((entry) {
+          final index = entry.key;
+          final stage = entry.value;
+          final isLast = index == stages.length - 1;
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Timeline line and circle
-            Column(
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: stage.isCompleted 
-                        ? Colors.green[600]
-                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                    border: stage.isCompleted 
-                        ? null
-                        : Border.all(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                            width: 1,
-                          ),
-                  ),
-                  child: stage.isCompleted
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 16,
-                        )
-                      : FaIcon(
-                          stage.icon,
-                          size: 12,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                        ),
-                ),
-                if (!isLast)
-                  Container(
-                    width: 2,
-                    height: 40,
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                  ),
-              ],
-            ),
-            
-            const SizedBox(width: 16),
-            
-            // Stage content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                // Timeline column with perfect alignment
+                SizedBox(
+                  width: 32,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Text(
-                          stage.title,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: stage.isCompleted ? FontWeight.w600 : FontWeight.w500,
+                      // Circle with consistent size and positioning
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: stage.isCompleted 
+                              ? Colors.green[600]
+                              : Theme.of(context).colorScheme.surface,
+                          border: Border.all(
                             color: stage.isCompleted 
-                                ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                ? Colors.green[600]!
+                                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            width: 2,
                           ),
+                        ),
+                        child: Center(
+                          child: stage.isCompleted
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                )
+                              : FaIcon(
+                                  stage.icon,
+                                  size: 12,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                ),
                         ),
                       ),
-                      if (stage.date != null)
-                        Text(
-                          _formatDate(stage.date!),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      // Connecting line that touches the circle
+                      if (!isLast)
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            margin: const EdgeInsets.only(top: 0),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
                           ),
                         ),
                     ],
                   ),
-                  if (stage.description.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      stage.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Stage content with consistent spacing
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                stage.title,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: stage.isCompleted ? FontWeight.w600 : FontWeight.w500,
+                                  color: stage.isCompleted 
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                            if (stage.date != null)
+                              Text(
+                                _formatDate(stage.date!),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (stage.description.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            stage.description,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                        if (!isLast) const SizedBox(height: 28),
+                      ],
                     ),
-                  ],
-                  if (!isLast) const SizedBox(height: 20),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 

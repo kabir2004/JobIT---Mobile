@@ -4186,7 +4186,9 @@ class MinimalJobCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(job.location, style: theme.textTheme.labelSmall),
                       const SizedBox(height: 10),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -4204,7 +4206,6 @@ class MinimalJobCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
                           Text(
                             '\$${_formatNumber(job.salary)}', 
                             style: theme.textTheme.labelMedium?.copyWith(
@@ -4213,7 +4214,6 @@ class MinimalJobCard extends StatelessWidget {
                               fontSize: 13,
                             ),
                           ),
-                          const SizedBox(width: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
